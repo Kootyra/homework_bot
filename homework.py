@@ -44,7 +44,7 @@ handler.setFormatter(formatter)
 
 
 def send_message(bot, message):
-    """Отправляет сообщение в Telegram чат,
+    """Отправляет сообщение в Telegram чат.
 
     определяемый переменной окружения TELEGRAM_CHAT_ID.
     Принимает на вход два параметра: экземпляр класса Bot
@@ -57,7 +57,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Делает запрос к единственному эндпоинту API-сервиса.
-    
+
     В качестве параметра функция получает временную метку.
     В случае успешного запроса должна вернуть ответ API,
     преобразовав его из формата JSON к типам данных Python.
@@ -71,7 +71,7 @@ def get_api_answer(current_timestamp):
             'Статус ответа не 200'
         )
     else:
-        logger.info(f'Данные усепешно получены')
+        logger.info('Данные усепешно получены')
     return response.json()
 
 
@@ -95,34 +95,39 @@ def parse_status(homework):
     """Извлекает из информации о конкретной домашней работе статус этой работы.
 
     В качестве параметра функция получает только один элемент из списка
-    домашних работ. В случае успеха, функция возвращает подготовленную для отправки
-    в Telegram строку, содержащую один из вердиктов словаря HOMEWORK_STATUSES.
+    домашних работ. В случае успеха, функция возвращает
+    подготовленную для отправки в Telegram строку,
+    содержащую один из вердиктов словаря HOMEWORK_STATUSES.
     """
     if isinstance(homework, dict):
         homework_name = homework['homework_name']
         homework_status = homework['status']
         verdict = HOMEWORK_STATUSES[homework_status]
-        return (f'Изменился статус проверки работы "{homework_name}". {verdict}')
+        return (f'Изменился статус проверки работы "{homework_name}".'
+                f'{verdict}')
     else:
         raise KeyError('Не верный ответ API')
 
 
 def check_tokens():
-    """Проверяет доступность переменных окружения,
+    """Проверяет доступность переменных окружения.
 
     которые необходимы для работы программы.
     Если отсутствует хотя бы одна переменная окружения,
     то функция должна вернуть False, иначе — True.
     """
-    if PRACTICUM_TOKEN != None and TELEGRAM_TOKEN != None and TELEGRAM_CHAT_ID != None:
+    if (PRACTICUM_TOKEN is not None 
+        and TELEGRAM_TOKEN is not None 
+        and TELEGRAM_CHAT_ID is not None):
         return True
     else:
-        logger.critical(f'Проверьте константы')
+        logger.critical('Проверьте константы')
         return False
+
 
 def main():
     """Основная логика работы бота."""
-    if check_tokens() == True:
+    if check_tokens() is True:
         bot = telegram.Bot(token=TELEGRAM_TOKEN)
         current_timestamp = int(time.time())
         message_one = None
@@ -145,6 +150,7 @@ def main():
                     message_one = f'Сбой в работе программы: {error}'
                 logger.error(message)
                 time.sleep(RETRY_TIME)
+
 
 if __name__ == '__main__':
     main()
