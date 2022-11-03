@@ -116,9 +116,9 @@ def check_tokens():
     Если отсутствует хотя бы одна переменная окружения,
     то функция должна вернуть False, иначе — True.
     """
-    if (PRACTICUM_TOKEN is not None 
-        and TELEGRAM_TOKEN is not None 
-        and TELEGRAM_CHAT_ID is not None):
+    if (PRACTICUM_TOKEN is not None
+            and TELEGRAM_TOKEN is not None
+            and TELEGRAM_CHAT_ID is not None):
         return True
     else:
         logger.critical('Проверьте константы')
