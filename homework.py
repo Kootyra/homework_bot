@@ -1,6 +1,6 @@
 import sys
 from exceptions import (APIAnswerError, TLGProblemSendMSGError,
-                        NotDictError, NotStatusError, NoParamstError,
+                        NotDictError, NotStatusError,
                         NoWorksError, NoRequestError)
 import logging
 import os
@@ -56,8 +56,11 @@ def send_message(bot, message):
     """
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-    except TLGProblemSendMSGError:
-        raise TypeError('Сообщение в Телеграм не отправлено')
+    except Exception as error:
+        raise TLGProblemSendMSGError(f'Сообщение в Телеграм'
+                                     f'не отправлено{error}')
+    else:
+        logger.info('Сообщение успешно отправлено')
 
 
 def get_api_answer(current_timestamp):
@@ -74,11 +77,9 @@ def get_api_answer(current_timestamp):
         'params': {'from_date': timestamp}}
     try:
         response = requests.get(**request_params)
-    except NoParamstError:
-        raise TypeError(f'Отсутствуют необходимые параметры.'
-                        f'Получено {request_params.values()}')
-    if response is None:
-        raise NoRequestError('Ошибка при выполнении запроса')
+    except ConnectionError as error:
+        raise NoRequestError(f'Ошибка при выполнении запроса {error}'
+                             f'Получено {request_params.values()}')
     if response.status_code != HTTPStatus.OK:
         raise APIAnswerError(
             f'Неверный ответ от сервера. Ожидался статус ответа 200.'
@@ -99,13 +100,10 @@ def check_response(response):
     if not isinstance(response, dict):
         raise TypeError(f'Полученный тип данных не словарь.'
                         f'Получены данные типа {type(response)}')
-    homeworks = response['homeworks']
-    current_date = response['current_date']
-    if ('homeworks' or 'current_date') not in response:
-        raise TypeError(f'В словаре отсутствуют необходимые ключи.'
-                        f'(homeworks или current_date) Получено:'
-                        f'{homeworks};'
-                        f'{current_date}')
+    if ('homeworks' or 'current_date') not in response.keys():
+        raise KeyError(f'В словаре отсутствуют необходимые ключи.'
+                       f'(homeworks или current_date)'
+                       f'Получены ключи {response.keys()}')
     homework = response['homeworks']
     if homework == []:
         raise NoWorksError('Информации по работам не обнаружено')
@@ -123,12 +121,11 @@ def parse_status(homework):
     if not isinstance(homework, dict):
         raise KeyError(f'Полученный тип данных не словарь.'
                        f'Получены данные типа {type(homework)}')
+    if ('homework_name' or 'status') not in homework.keys():
+        raise KeyError(f'В словаре отсутствуют необходимые ключи. Получено:'
+                       f'{homework.keys()};')
     homework_name = homework['homework_name']
     homework_status = homework['status']
-    if ('homework_name' or 'status') not in homework:
-        raise KeyError(f'В словаре отсутствуют необходимые ключи. Получено:'
-                       f'имя домашней работы - {homework_name};'
-                       f'статус домашней работы{homework_status}')
     if homework_status not in HOMEWORK_STATUSES:
         raise KeyError(f'Статус {homework_status}'
                        f'не соответствует ожидаемому')
@@ -154,11 +151,11 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-    if check_tokens() is not True:
-        raise sys.exit('Программа завершена.'
-                       'Не хвататет обязательных переменнных окружения'
-                       '(ID чата получателя, токена бота и/или токена Yндекса.'
-                       )
+    if not check_tokens():
+        sys.exit('Программа завершена.'
+                 'Не хвататет обязательных переменнных окружения'
+                 '(ID чата получателя, токена бота и/или токена Yндекса.'
+                 )
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     message_one = None
@@ -170,9 +167,8 @@ def main():
             message = parse_status(homework)
             if message_one != message:
                 send_message(bot, message)
-                logger.info('Сообщение успешно отправлено')
                 message_one = parse_status(homework)
-        except (APIAnswerError, TLGProblemSendMSGError, NoParamstError,
+        except (APIAnswerError, TLGProblemSendMSGError,
                 NotDictError, NotStatusError, TypeError,
                 KeyError, NoRequestError) as error:
             message = f'Сбой в работе программы: {error}'

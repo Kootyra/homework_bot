@@ -38,9 +38,3 @@ class NoRequestError(Exception):
     """No request."""
 
     pass
-
-
-class NoParamstError(Exception):
-    """No request."""
-
-    pass
